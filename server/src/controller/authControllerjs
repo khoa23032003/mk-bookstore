@@ -1,0 +1,32 @@
+import User from "../models/User";
+import bcrypt from "bcrypt";
+
+export const signUp = async (req, res) => {
+  try {
+    // Nhận dữ liệu từ client và kiểm tra xem đã nhập đủ thông tin chưa.
+    const { username, password, email, firstName, lastName } = req.body;
+    //kiểm tra dữ liệU đầu vào có hợp lệ hay không
+    if (!username || !password || !email || !firstName || !lastName) {
+      return res.status(400).json({ message: "vui lòng điền đủ thông tin" });
+    }
+    // Kiểm tra username có bị trùng trong database hay không.
+    const duplicate = await User.findOne({ username });
+    if (duplicate) {
+      return res.status(409).json({ message: "username đã tồn tại" });
+    }
+    // Mã hoá password bằng bcrypt với 10 vòng lặp.
+    const hashPassword = await bcrypt.hash(password, 10);
+    // Tạo user mới với password đã mã hoá và thông tin người dùng.
+    await User.create({
+      username,
+      hashedPassword,
+      email,
+      displayName: `${firstName} ${lastName}`,
+    });
+    // Trả về trạng thái 204 khi tạo thành công.
+    return res.sendStatus(204);
+  } catch (error) {
+    console.error("Lỗi khi chạy sign up", error);
+    return res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};
